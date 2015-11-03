@@ -1,0 +1,9 @@
+{
+  "name": "highload-20151102",
+  "version": "1.0.0",
+  "dependencies": {
+    "gulp-file": "^0.2.0",
+    "gulp-util": "^3.0.7",
+    "ymb": "^0.3.35"
+  }
+}
