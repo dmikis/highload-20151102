@@ -16,3 +16,7 @@ Demonstation of `EXT_disjoint_timer_query` WebGL extension capabilities.
 ### many_instances_naive and manu_instances_instancing
 
 Demonstation of `ANGLE_instanced_arrays` WebGL extension.
+
+### overdraw_naive and overdraw_earlyZ
+
+Demonstation of early Z test optimization.
