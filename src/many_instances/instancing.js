@@ -20,8 +20,7 @@ ym.modules.define('many_instances.instancing', [
         queries = [],
         timeBar = new GpuCpuTimeBar(
             document.querySelector('#timeBar'),
-            5000, // µs
-            GpuCpuTimeBar.GPU_CPU_ORDER
+            3000 // µs
         );
 
     if (!instancingExt) {

@@ -18,8 +18,7 @@ ym.modules.define('many_instances.naive', [
         queries = [],
         timeBar = new GpuCpuTimeBar(
             document.querySelector('#timeBar'),
-            2e5, // µs
-            GpuCpuTimeBar.CPU_GPU_ORDER
+            2e5 // µs
         );
 
     if (!timerExt) {
@@ -103,11 +102,10 @@ ym.modules.define('many_instances.naive', [
                 perspectiveMatrix,
                 transform.translate(0, 0, -1),
                 rotationMatrix,
-                transform.isotropicScale(0.4),
                 transform.translate(
-                    logoGeometry.vbuffer[offset],
-                    logoGeometry.vbuffer[offset + 1],
-                    logoGeometry.vbuffer[offset + 2]
+                    0.4 * logoGeometry.vbuffer[offset],
+                    0.4 * logoGeometry.vbuffer[offset + 1],
+                    0.4 * logoGeometry.vbuffer[offset + 2]
                 ),
                 scaleMatrix
             ));

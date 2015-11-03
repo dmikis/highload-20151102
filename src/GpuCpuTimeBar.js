@@ -2,25 +2,24 @@ ym.modules.define('GpuCpuTimeBar', [
     'MedianFilter',
     'util.defineClass'
 ], function (provide, MedianFilter, defineClass) {
-    function GpuCpuTimeBar (canvas, scale, order) {
+    function GpuCpuTimeBar (canvas, scale) {
         this._scale = scale;
-        this._order = order;
         this._scaledTime = {gpu: 0, cpu: 0};
         this._filter = {
             gpu: new MedianFilter({windowSize: 25}),
             cpu: new MedianFilter({windowSize: 25})
         };
-        this._w = canvas.width;
+        this._w = canvas.width >> 1;
         this._h = canvas.height;
         this._ctx = canvas.getContext('2d');
     }
 
     var GPU_TIME = GpuCpuTimeBar.GPU_TIME = 'gpu',
-        CPU_TIME = GpuCpuTimeBar.CPU_TIME = 'cpu',
-        GPU_CPU_ORDER = GpuCpuTimeBar.GPU_CPU_ORDER = [GPU_TIME, CPU_TIME],
-        CPU_GPU_ORDER = GpuCpuTimeBar.CPU_GPU_ORDER = [CPU_TIME, GPU_TIME],
+        CPU_TIME = GpuCpuTimeBar.CPU_TIME = 'cpu';
 
-        COLORS = {gpu: 'blue', cpu: 'green'};
+        COLORS = {gpu: 'blue', cpu: 'green'},
+
+        OFFSET = {cpu: 0, gpu: 30};
 
     provide(defineClass(GpuCpuTimeBar, {
         setTime: function (time, kind) {
@@ -28,11 +27,10 @@ ym.modules.define('GpuCpuTimeBar', [
                 this._h * this._filter[kind].filter(time) / this._scale;
         },
 
-        draw: function (gpuTime, cpuTime) {
-            var order = this._order;
-            this._ctx.clearRect(0, 0, this._w, this._h);
-            this._drawBar(order[0]);
-            this._drawBar(order[1]);
+        draw: function () {
+            this._ctx.clearRect(0, 0, this._w << 1, this._h);
+            this._drawBar(CPU_TIME);
+            this._drawBar(GPU_TIME);
         },
 
         _drawBar: function (kind) {
@@ -41,7 +39,7 @@ ym.modules.define('GpuCpuTimeBar', [
 
             ctx.fillStyle = COLORS[kind];
             ctx.fillRect(
-                0, this._h - scaledTime,
+                OFFSET[kind], this._h - scaledTime,
                 this._w, scaledTime
             );
         }

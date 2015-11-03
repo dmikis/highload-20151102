@@ -1,12 +1,12 @@
-ym.modules.define('EXT_disjoint_timer_query', [
+ym.modules.define('overdraw.naive', [
     'Buffer',
     'GpuCpuTimeBar',
     'Program',
     'transform',
 
     'EXT_disjoint_timer_query.logo.json',
-    'EXT_disjoint_timer_query.logo.vert',
-    'EXT_disjoint_timer_query.logo.frag'
+    'overdraw.naive.vert',
+    'overdraw.naive.frag'
 ], function (provide, Buffer, GpuCpuTimeBar, Program, transform, logoGeometry, vsSrc, fsSrc) {
     var gl = document.querySelector('#gl').getContext('webgl'),
         glW = gl.drawingBufferWidth,
@@ -17,7 +17,7 @@ ym.modules.define('EXT_disjoint_timer_query', [
         queries = [],
         timeBar = new GpuCpuTimeBar(
             document.querySelector('#timeBar'),
-            200 // µs
+            6000 // µs
         );
 
     if (!timerExt) {
@@ -28,6 +28,14 @@ ym.modules.define('EXT_disjoint_timer_query', [
 
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LESS);
+    gl.enable(gl.BLEND);
+    gl.blendEquation(gl.FUNC_ADD);
+    gl.blendFuncSeparate(
+        gl.SRC_ALPHA,
+        gl.ONE_MINUS_SRC_ALPHA,
+        gl.ONE,
+        gl.ONE_MINUS_SRC_ALPHA
+    );
 
     gl.viewport(0, 0, glW, glH);
 
@@ -36,34 +44,33 @@ ym.modules.define('EXT_disjoint_timer_query', [
         program = new Program(gl, vsSrc, fsSrc),
         vertexPositionAttr = program.getAttributeIdx('vertexPosition'),
         vertexDiffuseColorAttr = program.getAttributeIdx('vertexDiffuseColor'),
-        mvpUniform = program.getUniform('mvp');
+        mvpUniform = program.getUniform('mvp'),
+        alphaStepUniform = program.getUniform('alphaStep');
 
-    vertexBuffer.setData(new Float32Array(logoGeometry.vbuffer), gl.STATIC_DRAW);
+    var QUAD_DATA = new Float32Array([
+            -1, -1, -0.5,
+            -1,  1, -0.5,
+             1, -1, -0.5,
+             1, -1, -0.5,
+             1,  1, -0.5,
+            -1,  1, -0.5
+        ]),
+        QUAD_DATA_BYTE_LENGTH = QUAD_DATA.buffer.byteLength;
+
+    vertexBuffer.resize(
+        QUAD_DATA_BYTE_LENGTH + 4 * logoGeometry.vbuffer.length,
+        gl.STATIC_DRAW
+    );
+    vertexBuffer.setSubData(0, QUAD_DATA);
+    vertexBuffer.setSubData(QUAD_DATA_BYTE_LENGTH, new Float32Array(logoGeometry.vbuffer));
+
     indexBuffer.setData(new Uint16Array(logoGeometry.ibuffer), gl.STATIC_DRAW);
 
     var VERTEX_SIZE = 48;
 
-    gl.enableVertexAttribArray(vertexPositionAttr);
-    gl.vertexAttribPointer(
-        vertexPositionAttr,
-        3,
-        gl.FLOAT,
-        false,
-        VERTEX_SIZE,
-        0
-    );
-
-    gl.enableVertexAttribArray(vertexDiffuseColorAttr);
-    gl.vertexAttribPointer(
-        vertexDiffuseColorAttr,
-        3,
-        gl.FLOAT,
-        false,
-        VERTEX_SIZE,
-        24
-    );
-
     program.use();
+
+    gl.enableVertexAttribArray(vertexPositionAttr);
 
     function render (t) {
         var query;
@@ -100,6 +107,26 @@ ym.modules.define('EXT_disjoint_timer_query', [
             transform.rotateY(3e-3 * t),
             transform.isotropicScale(0.35)
         ));
+        alphaStepUniform.setFloat(0.001);
+
+        gl.vertexAttribPointer(
+            vertexPositionAttr,
+            3,
+            gl.FLOAT,
+            false,
+            VERTEX_SIZE,
+            QUAD_DATA_BYTE_LENGTH
+        );
+
+        gl.enableVertexAttribArray(vertexDiffuseColorAttr);
+        gl.vertexAttribPointer(
+            vertexDiffuseColorAttr,
+            3,
+            gl.FLOAT,
+            false,
+            VERTEX_SIZE,
+            QUAD_DATA_BYTE_LENGTH + 24
+        );
 
         query = timerExt.createQueryEXT();
         timerExt.beginQueryEXT(timerExt.TIME_ELAPSED_EXT, query);
@@ -114,6 +141,22 @@ ym.modules.define('EXT_disjoint_timer_query', [
         timerExt.endQueryEXT(timerExt.TIME_ELAPSED_EXT);
 
         queries.push(query);
+
+        gl.vertexAttribPointer(
+            vertexPositionAttr,
+            3,
+            gl.FLOAT,
+            false,
+            0,
+            0
+        );
+        gl.disableVertexAttribArray(vertexDiffuseColorAttr);
+        gl.vertexAttrib3f(vertexDiffuseColorAttr, 0, 1, 0);
+
+        mvpUniform.setMatrix4(transform.isotropicScale(0.5));
+        alphaStepUniform.setFloat(0.0005);
+
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
 
         timeBar.draw();
 
